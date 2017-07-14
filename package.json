@@ -1,0 +1,17 @@
+{
+  "name": "A",
+  "version": "1.0.0",
+  "description": "",
+  "main": "A.js",
+  "dependencies": {
+    "mysql": "^2.13.0",
+    "pdfkit": "^0.8.3"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
