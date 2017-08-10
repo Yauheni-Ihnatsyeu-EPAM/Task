@@ -1,10 +1,27 @@
-﻿var http = require('http');
-var url = require('url');
-var db = require('./db');
-var fs = require('fs');
-var pdfKit = require('pdfkit');
+﻿const http = require('http');
+const Promise = require("bluebird");
+const url = require('url');
+const db = require('./db');
 
-var server = http.createServer();
+const fs = require('fs');
+const pdfKit = Promise.promisifyAll(require("pdfKit"));
+
+
+var mysql = require('mysql');
+
+var connection = mysql.createConnection({
+    host: "localhost",
+    user: "root",
+    password: "123",
+    database: "task"
+});
+
+Promise.promisifyAll(require("mysql/lib/Connection").prototype);
+Promise.promisifyAll(require("mysql/lib/Pool").prototype);
+
+const server = http.createServer();
+
+console.log("bo");
 
 server.on('request', (function(req, res) {
 
@@ -14,30 +31,50 @@ server.on('request', (function(req, res) {
     }
 
     var name = url.parse(req.url, true).query.firstName;
+    let sql = `SELECT firstName, lastName, image 
+                        FROM data 
+                        WHERE firstName LIKE '${name}%'`;
 
-    db.queryData(name, function(err, result) {
-        console.log(result);
-        if (err || result.length === 0) {
+    connection.queryAsync(sql)
+        .then(result => {
+            var doc = new pdfKit();
+            var buffers = [];
+            doc.onAsync('data').then(result => {
+                console.log(data);
+                buffers.push.bind(buffers);
+            });
+            doc.onAsync('end').then(() => {
+
+                buffers = Buffer.concat(buffers);
+                return buffers;
+            }).then(buffers => {
+                let sql = `UPDATE data 
+                            SET pdf = '${JSON.stringify(buffers)}' 
+                            WHERE firstName LIKE '${name}%'`;
+                connection.queryAsync(sql).catch((err) => { if (err) return; });
+            });
+            return result;
+
+        }).then(result => {
+            console.log('text');
+            doc.text(`${result[0].firstName} + ${result[0].lastName} + ${result[0].image}`);
+            doc.pipe(fs.createWriteStream('file.pdf'));
+            doc.end();
+        }).then(() => {
             res.writeHead(200, { 'Content-Type': 'text/html' });
+            res.write(JSON.stringify({ firstName: (true) }));
+            res.end();
+        }).catch(err => {
+            console.log("error");
+            res.writeHead(404, { 'Content-Type': 'text/html' });
             res.write(JSON.stringify({ firstName: (false) }));
             res.end();
-            return;
-        }
-        var doc = new pdfKit();
-        var buffers = [];
-        doc.on('data', buffers.push.bind(buffers));
-        doc.on('end', function() {
-            buffers = Buffer.concat(buffers)
-            db.updatePdf(JSON.stringify(buffers), name);
-        });
-        doc.text(`${result[0].firstName} + ${result[0].lastName} + ${result[0].image}`);
-        doc.pipe(fs.createWriteStream('file.pdf'));
-        doc.end();
+        })
 
-        res.writeHead(200, { 'Content-Type': 'text/html' });
-        res.write(JSON.stringify({ firstName: (true) }));
-        res.end();
-    });
-}));
+
+
+}))
+
+
 
 server.listen(8080);

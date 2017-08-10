@@ -7,7 +7,9 @@
     "mysql": "^2.13.0",
     "pdfkit": "^0.8.3"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "bluebird": "^3.5.0"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
